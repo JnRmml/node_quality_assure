@@ -71,8 +71,8 @@ function ConvertHandler() {
 	 //default case überarbeiten
 	  switch(initUnit) {
 		case "mi":
-		    return "km";
-    		break;
+		        return "km";
+    		        break;
 		case "km":
 			return "mi";
 			break;
