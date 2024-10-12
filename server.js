@@ -10,17 +10,29 @@ const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
 const runner            = require('./test-runner');
 
+//const myDB = require('./connection');
+//const { ObjectID } = require('mongodb');
+const session = require('express-session');
+//const MongoStore = require('connect-mongo')(session);
+//const URI = process.env.MONGO_URI;
+//const store = new MongoStore({ url: URI });
+
 let app = express();
 
 app.use('/public', express.static(process.cwd() + '/public'));
 
 app.use(cors({origin: '*'})); //For FCC testing purposes only
-
+app.use(express.json());
 
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+//myDB(async client => {
+ // const myDataBase = await client.db('projects').collection('issue');
+  apiRoutes(app);
+  
+  
 //Sample front-end
 app.route('/:project/')
   .get(function (req, res) {
@@ -46,6 +58,12 @@ app.use(function(req, res, next) {
     .send('Not Found');
 });
 
+  // Be sure to add this...
+//}).catch(e => {
+//  app.route('/').get((req, res) => {
+//    res.render('index', { title: e, message: 'Unable to connect to database' });
+//  });
+// });
 //Start our server and tests!
 const listener = app.listen(process.env.PORT || 3000, function () {
   console.log('Your app is listening on port ' + listener.address().port);
