@@ -1,252 +1,261 @@
+const chai = require("chai");
 const chaiHttp = require('chai-http');
-const chai = require('chai');
 const assert = chai.assert;
 const server = require('../server');
 
 chai.use(chaiHttp);
 
-suite('Functional Tests', function() {
-    // #1
-    test('Test POST /api/issues/{project}', function (done) {
+suite('Functional Tests', () => {
+
+	
+    //Solve a puzzle with valid puzzle string: POST request to /api/solve
+    test('Solve a puzzle with valid puzzle string: POST request to /api/solve', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .post('/api/issues/apitest')
+        .post('/api/solve')
 		.send({
-			"issue_title": "Test Titel",
-			"issue_text": "issue_text No.1",
-			"created_by": "Max Mustermann",
-			"assigned_to": "Manni Musterperson",
-			"status_text": "Status statusmensch",
+			"puzzle": "1.5..2.84..63.12.7.2..5.....9..1....8.2.3674.3.7.2..9.47...8..1..16....926914.37." 
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.issue_title, 'Test Titel');
-          assert.equal(res.body.issue_text, 'issue_text No.1');
-          assert.equal(res.body.created_by, 'Max Mustermann');
-          assert.equal(res.body.assigned_to, 'Manni Musterperson');
-          assert.equal(res.body.status_text, 'Status statusmensch');
-          done();
+          assert.equal(res.body.solution , '135762984946381257728459613694517832812936745357824196473298561581673429269145378');
+		  done();
         });
     });
-    // #2
-    test('Test required POST /api/issues/{project}', function (done) {
+    //Solve a puzzle with missing puzzle string: POST request to /api/solve
+    test('Solve a puzzle with missing puzzle string: POST request to /api/solve', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .post('/api/issues/apitest')
-		.send({
-			"issue_title": "Test Titel_req",
-			"issue_text": "issue_text No.1_req",
-			"created_by": "Max Mustermann_req"
+        .post('/api/solve')
+		.send({ })
+        .end(function (err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.type, 'application/json');//'application/json' Object);
+          assert.equal(res.body.error , 'Required field missing');
+		  done();
+        });
+    });
+    //Solve a puzzle with invalid characters: POST request to /api/solve
+    test('Solve a puzzle with invalid characters: POST request to /api/solve', function (done) {
+      chai
+        .request(server)
+        .keepOpen()
+        .post('/api/solve')
+		.send({ 
+			"puzzle": "1.5..2.84..63.12.7.2a.5.....9..1....8.2.3674.3.7.2..$.47...8..1..16....926914.37." 
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.issue_title, 'Test Titel_req');
-          assert.equal(res.body.issue_text, 'issue_text No.1_req');
-          assert.equal(res.body.created_by, 'Max Mustermann_req'); 
-          done();
+          assert.equal(res.body.error , 'Invalid characters in puzzle');
+		  done();
         });
     });
-    // #3
-    test('Test required missing POST /api/issues/{project}', function (done) {
+    //Solve a puzzle with incorrect length: POST request to /api/solve
+    test('Solve a puzzle with incorrect length: POST request to /api/solve', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .post('/api/issues/apitest')
-		.send({
-			"issue_title": "Test Titel_req",
-			"created_by": "Max Mustermann_req"
+        .post('/api/solve')
+		.send({ 
+			"puzzle": "5..91372.3...8.5.9.9.25..8.68.47.23...95..46.7.4.....5.2.......4..8916..85.72...311" 
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.error, 'required field(s) missing'); 
-          done();
+          assert.equal(res.body.error , 'Expected puzzle to be 81 characters long');
+		  done();
         });
     });
-    // #4
-    test('GET request to /api/issues/{project}', function (done) {
+    //Solve a puzzle that cannot be solved: POST request to /api/solve
+    test('Solve a puzzle that cannot be solved: POST request to /api/solve', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .get('/api/issues/apitest')
-        .end(function (err, res) {
-          assert.equal(res.status, 200);
-          assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.isArray(res.body, 'Should be an array'); 
-          done();
-        });
-    });
-    // #5
-    test('GET with one filter request to /api/issues/{project}', function (done) {
-      chai
-        .request(server)
-        .keepOpen()
-        .get('/api/issues/apitest?issue_title=Test%20Titel_req') 
-        .end(function (err, res) {
-          assert.equal(res.status, 200);
-          assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.isArray(res.body, 'Should be an array'); 
-          assert.equal(res.body[0].issue_title, 'Test Titel_req');
-          assert.equal(res.body[0].issue_text, 'issue_text No.1_req');
-		  assert.equal(res.body[0].created_by, 'Max Mustermann_req'); 
-          done();
-        });
-    });
-    // #6
-    test('View issues on a project with multiple filters: GET request to /api/issues/{project}', function (done) {
-      chai
-        .request(server)
-        .keepOpen()
-        .get('/api/issues/apitest?issue_title=Test%20Titel_req&created_by=Max%20Mustermann_req') 
-        .end(function (err, res) {
-          assert.equal(res.status, 200);
-          assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.isArray(res.body, 'Should be an array'); 
-          assert.equal(res.body[0].issue_title, 'Test Titel_req');
-          assert.equal(res.body[0].issue_text, 'issue_text No.1_req');
-          assert.equal(res.body[0].created_by, 'Max Mustermann_req'); 
-          done();
-        });
-    });
-    // #7
-    test('Update one field on an issue: PUT request to /api/issues/{project}', function (done) {
-      chai
-        .request(server)
-        .keepOpen()
-        .put('/api/issues/fcc-project')
-		.send({
-			"_id": "1457570f-ce38-4dde-9558-1fc4f48078cb",
-			"created_by": "Max Mustermann Neu"
+        .post('/api/solve')
+		.send({ 
+			"puzzle": "1.5..2.84..63.12.7.25.5.5...9..1....8.2.3674.3.7.2..5.47...8..1..16....926914.37." 
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.result, 'successfully updated'); 
-          assert.equal(res.body._id, "1457570f-ce38-4dde-9558-1fc4f48078cb"); 
-          done();
+          assert.equal(res.body.error , 'Puzzle cannot be solved');
+		  done();
         });
     });
-    // #8
-    test('Update multiple fields on an issue: PUT request to /api/issues/{project} ', function (done) {
+    //Check a puzzle placement with all fields: POST request to /api/check
+    test('Check a puzzle placement with all fields: POST request to /api/check', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .put('/api/issues/fcc-project')
-		.send({
-			"_id": "1457570f-ce38-4dde-9558-1fc4f48078cb",
-			"issue_title": "Test Titel_anders",
-			"created_by": "Max Mustermann_Neuer"
+        .post('/api/check')
+		.send({ 
+			"puzzle" : '..839.7.575.....964..1.......16.29846.9.312.7..754.....62..5.78.8...3.2...492...1',
+		    "coordinate" : 'A1',
+		    "value" : '1'
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.result, 'successfully updated'); 
-          assert.equal(res.body._id, "1457570f-ce38-4dde-9558-1fc4f48078cb"); 
-          done();
+          assert.equal(res.body.valid , true);
+		  done();
         });
     });
-    // #9
-    test('Update an issue with missing _id: PUT request to /api/issues/{project}', function (done) {
+    //Check a puzzle placement with single placement conflict: POST request to /api/check
+    test('Check a puzzle placement with single placement conflict: POST request to /api/check', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .put('/api/issues/fcc-project')
-		.send({
-			"issue_title": "Test Titel_req",
-			"created_by": "Max Mustermann_req"
+        .post('/api/check')
+		.send({ 
+			"puzzle" : '..839.7.575.....964..1.......16.29846.9.312.7..754.....62..5.78.8...3.2...492...1',
+		    "coordinate" : 'B5',
+		    "value" : '2'
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.error, 'missing _id'); 
-          done();
+          assert.equal(res.body.valid , false);
+          assert.equal(res.body.conflict[0] , "column");
+          assert.equal(res.body.conflict.length , 1);
+          assert.isArray(res.body.conflict , "conflict soll ein Array sein");
+		  done();
         });
     });
-    // #10
-    test('Update an issue with no fields to update: PUT request to /api/issues/{project}', function (done) {
+    //Check a puzzle placement with multiple placement conflicts: POST request to /api/check
+    test('Check a puzzle placement with multiple placement conflicts: POST request to /api/check', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .put('/api/issues/fcc-project')
-		.send({
-			"_id": "1457570f-ce38-4dde-9558-1fc4f48078cb"
+        .post('/api/check')
+		.send({ 
+			"puzzle" : '..839.7.575.....964..1.......16.29846.9.312.7..754.....62..5.78.8...3.2...492...1',
+		    "coordinate" : 'D3',
+		    "value" : '8'
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.error, 'no update field(s) sent'); 
-          done();
+          assert.equal(res.body.valid , false);
+          assert.equal(res.body.conflict[0] , "row");
+          assert.equal(res.body.conflict[1] , "column");
+          assert.equal(res.body.conflict.length , 2);
+          assert.isArray(res.body.conflict , "conflict soll ein Array sein");
+		  done();
         });
     });
-    // #11
-    test('Update an issue with an invalid _id: PUT request to /api/issues/{project}', function (done) {
+    //Check a puzzle placement with all placement conflicts: POST request to /api/check
+    test('Check a puzzle placement with all placement conflicts: POST request to /api/check', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .put('/api/issues/apitest')
-		.send({
-			"_id": "no invalid id is a valid id",
-			"issue_title": "Test Titel_req",
-			"created_by": "Max Mustermann_req"
+        .post('/api/check')
+		.send({ 
+            "puzzle" : '..839.7.575.....964..1.......16.29846.9.312.7..754.....62..5.78.8...3.2...492...1',
+            "coordinate" : 'D3',
+            "value" : '4'
+            })
+        .end(function (err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.type, 'application/json');//'application/json' Object);
+          assert.equal(res.body.valid , false);
+          assert.equal(res.body.conflict[0] , "row");
+          assert.equal(res.body.conflict[1] , "column");
+          assert.equal(res.body.conflict[2] , "region");
+          assert.equal(res.body.conflict.length , 3);
+          assert.isArray(res.body.conflict , "conflict soll ein Array sein");
+		  done();
+        });
+    });
+    //Check a puzzle placement with missing required fields: POST request to /api/check
+	test('Check a puzzle placement with missing required fields: POST request to /api/check', function (done) {
+      chai
+        .request(server)
+        .keepOpen()
+        .post('/api/check')
+        .send({ })
+        .end(function (err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.type, 'application/json');//'application/json' Object);
+          assert.equal(res.body.error , "Required field(s) missing");
+		  done();
+        });
+    });
+    //Check a puzzle placement with invalid characters: POST request to /api/check
+	test('Check a puzzle placement with invalid characters: POST request to /api/check', function (done) {
+      chai
+        .request(server)
+        .keepOpen()
+        .post('/api/check')
+        .send({ 
+            "puzzle" : '..839.7.575.....964.!1.......16.29846.9.312.7..754....a62..5.78.8...3.2...492...1',
+            "coordinate" : 'D3',
+            "value" : "8"
+           })
+        .end(function (err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.type, 'application/json');//'application/json' Object);
+          assert.equal(res.body.error , "Invalid characters in puzzle");
+          done();
+        });
+    });
+    //Check a puzzle placement with incorrect length: POST request to /api/check
+	test('Check a puzzle placement with incorrect length: POST request to /api/check', function (done) {
+      chai
+        .request(server)
+        .keepOpen()
+        .post('/api/check')
+		.send({ 
+			"puzzle" : '..839.7.575.....964..1.......16.29846.9.312.7..754.....62..5.78.8...3.2...492...111',
+		    "coordinate" : 'D3',
+		    "value" : "8"
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.error, 'could not update'); 
-          assert.equal(res.body._id, "no invalid id is a valid id"); 
-          done();
+          assert.equal(res.body.error , "Expected puzzle to be 81 characters long");
+		  done();
         });
     });
-    // #12
-    test('DELETE request to /api/issues/{project}', function (done) {
+	//Check a puzzle placement with invalid placement coordinate: POST request to /api/check
+	test('Check a puzzle placement with invalid placement coordinate: POST request to /api/check', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .delete('/api/issues/fcc-project')
-		.send({
-			"_id": "1457570f-ce38-4dde-9558-1fc4f48078cb"
+        .post('/api/check')
+		.send({ 
+			"puzzle" : '..839.7.575.....964..1.......16.29846.9.312.7..754.....62..5.78.8...3.2...492...1',
+		    "coordinate" : 'Z3',
+		    "value" : "8"
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.result, 'successfully deleted'); 
-          assert.equal(res.body._id, "1457570f-ce38-4dde-9558-1fc4f48078cb"); 
-          done();
+          assert.equal(res.body.error , "Invalid coordinate");
+		  done();
         });
     });
-    // #13
-    test('invalid _id: DELETE request to /api/issues/{project}', function (done) {
+    //Check a puzzle placement with invalid placement value: POST request to /api/check
+    test('Check a puzzle placement with invalid placement value: POST request to /api/check', function (done) {
       chai
         .request(server)
         .keepOpen()
-        .delete('/api/issues/fcc-project')
-		.send({
-			"_id": "no invalid id is a valid id",
+        .post('/api/check')
+		.send({ 
+			"puzzle" : '..839.7.575.....964..1.......16.29846.9.312.7..754.....62..5.78.8...3.2...492...1',
+		    "coordinate" : 'D3',
+		    "value" : "82"
 			})
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.error, 'could not delete'); 
-          assert.equal(res.body._id, 'no invalid id is a valid id'); 
+          assert.equal(res.body.error , "Invalid value");
           done();
         });
     });
-    // #14
-    test('missing _id: DELETE request to /api/issues/{project}', function (done) {
-      chai
-        .request(server)
-        .keepOpen()
-        .delete('/api/issues/fcc-project')
-		.send({	})
-        .end(function (err, res) {
-          assert.equal(res.status, 200);
-          assert.equal(res.type, 'application/json');//'application/json' Object);
-          assert.equal(res.body.error, 'missing _id'); 
-          done();
-        });
-    });
+
 });
+
