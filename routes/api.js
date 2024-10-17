@@ -1,251 +1,119 @@
 'use strict';
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
-const path = require('path');
+
+const SudokuSolver = require('../controllers/sudoku-solver.js');
 
 module.exports = function (app) {
-	
-	// Dateipfad zur JSON-Datei
-const jsonFilePath = path.join(__dirname, 'issues.json');
-
-// Hilfsfunktion zum Laden der Daten aus der JSON-Datei
-function loadIssues() {
-  if (!fs.existsSync(jsonFilePath)) {
-    return [];
-  }
-  const fileData = fs.readFileSync(jsonFilePath, 'utf-8');
-  return JSON.parse(fileData || '[]'); // Leeres Array, falls die Datei leer ist
-}
-
-// Hilfsfunktion zum Speichern der Daten in der JSON-Datei
-function saveIssues(issues) {
-  fs.writeFileSync(jsonFilePath, JSON.stringify(issues, null, 2)); // Speichern mit 2er Einrückung für bessere Lesbarkeit
-}
-
-  app.route('/api/issues/:project')
   
-    .get(function (req, res){
-      let project = req.params.project;
-      //let open_proj = req.params.open;
-		/*
-		
-      project: project,
-      issue_title: issue_title,
-      issue_text: issue_text,
-      created_by: created_by,
-      assigned_to: assigned_to,
-      status_text: status_text,
-      created_on: time.toISOString(),
-      updated_on: time.toISOString(),
-      open: true,
-      _id: uuidv4() 
-	  */
-		
-		
-    // Laden der vorhandenen Issues aus der JSON-Datei
-    let issues = loadIssues();
-	//console.log(issues);
-    // Prüfen, ob ein Issue mit demselben Titel bereits existiert
-    //let existingIssue = issues.find(issue => issue.project === project);
-	let found = [];
-	for (const ent in issues){
-	//console.log(ent);
-		if(issues[ent].project === project){
-			found.push(issues[ent]);
+  let solver = new SudokuSolver();
+
+  function char_to_num(c){
+  //console.log(c);	  
+  if (c == 'A'){ return 0;}
+  if (c == 'B'){ return 1;}
+  if (c == 'C'){ return 2;}
+  if (c == 'D'){ return 3;}
+  if (c == 'E'){ return 4;}
+  if (c == 'F'){ return 5;}
+  if (c == 'G'){ return 6;}
+  if (c == 'H'){ return 7;}
+  if (c == 'I'){ return 8;}
+  return "Fehler";
+  }
+
+  function num_to_char(c){
+  //console.log(c);	  
+  if (c == 0){ return 'A';}
+  if (c == 1){ return 'B';}
+  if (c == 2){ return 'C';}
+  if (c == 3){ return 'D';}
+  if (c == 4){ return 'E';}
+  if (c == 5){ return 'F';}
+  if (c == 6){ return 'G';}
+  if (c == 7){ return 'H';}
+  if (c == 8){ return 'I';}
+  return "Fehler";
+  }
+  app.route('/api/check')
+    .post((req, res) => {
+		let puzzle = req.body.puzzle;
+		let coord = req.body.coordinate;
+		let value = req.body.value;
+		let coord_split = [];
+		//checks
+		if (puzzle == null || puzzle == "" || coord == null || coord == "" || value == null || value == "" ) {
+			return res.json({ error: 'Required field(s) missing' });
 		}
-	}
-	
-	// Dynamische Filterung basierend auf den Query-Parametern
-    const query = req.query; // Enthält alle Query-Parameter wie ?issue_title=xyz&created_by=abc
-
-    found = found.filter(proj => {
-      // Überprüfe alle Query-Parameter dynamisch
-      for (let key in query) {
-        if (query[key] && proj[key] !== query[key]) {
-          return false; // Wenn ein Query-Parameter nicht übereinstimmt, schließe es aus
-        }
-      }
-      return true; // Alle Bedingungen erfüllt
-    });
-
-    //console.log(`Gefundene Ergebnisse: ${JSON.stringify(found)}`);
-	
-	return res.json(found);
-
-    })
-
-   .post(function (req, res) {
-    let project = req.params.project;
-    console.log(project);
-    console.log(req.body);
-
-    let issue_title = req.body.issue_title;
-    let issue_text = req.body.issue_text;
-    let created_by = req.body.created_by;
-
-    // Überprüfen auf fehlende Felder
-    if ((issue_title == "" || issue_title == null) || (issue_text == "" || issue_text == null) || ( created_by == "" || created_by == null) ) {
-      return res.json({ error: 'required field(s) missing' });
-    }
-
-    // Optionale Felder
-	//Issue Text test
-    let assigned_to = req.body.assigned_to || "";
-    let status_text = req.body.status_text || "";
-
-    let time = new Date(); // Aktuelle Zeit als Date-Objekt
-    console.log("Zeit: ", time);
-
-	let unique_id = uuidv4();
-    // Erstellen des input_obj mit allen relevanten Feldern
-    let input_obj = {
-      project: project,
-      issue_title: issue_title,
-      issue_text: issue_text,
-      created_by: created_by,
-      assigned_to: assigned_to,
-      status_text: status_text,
-      created_on: time.toISOString(),
-      updated_on: time.toISOString(),
-      open: true,
-      _id: unique_id // UUID für _id generieren
-    };
-    console.log("Eingabeobjekt1: ", input_obj);
-	//return res.json(input_obj)
-
-    console.log("Eingabeobjekt: ", input_obj);
-
-    // Laden der vorhandenen Issues aus der JSON-Datei
-    let issues = loadIssues();
-
-    // Prüfen, ob ein Issue mit demselben Titel bereits existiert
-    /*let existingIssue = issues.find(issue => issue.issue_title === issue_title);
-	console.log("existiert:", existingIssue);
-    if (existingIssue) {
-      console.log("Eintrag bereits vorhanden: ", existingIssue);
-      return res.status(400).json({ error: 'issue_title already exists' });
-    }
-	*/
-
-    // Neuen Issue zum Array hinzufügen
-    issues.push(input_obj);
-
-    // Das Array wieder in der JSON-Datei speichern
-    saveIssues(issues);
-
-    console.log("Issue erfolgreich gespeichert: ", input_obj);
-
-    // Erfolgreich -> input_obj als JSON zurückgeben
-    return res.status(200).json({
-      assigned_to: assigned_to,
-      status_text: status_text,
-      open: true,
-      _id: unique_id, // UUID für _id generieren
-      issue_title: issue_title,
-      issue_text: issue_text,
-      created_by: created_by,
-      created_on: time.toISOString(),
-      updated_on: time.toISOString()
-    });
-    })
-    //})
-    
-    .put(function (req, res){
-      let project = req.params.project;
-      //console.log("proj", project);
-      //console.log(req);
-		const query = req.body; // Enthält alle Query-Parameter wie ?issue_title=xyz&created_by=abc
-		//console.log("query", query);
-		if(query._id == "" || query._id == null ){
-			return res.json({ error: 'missing _id' });
+		value = parseInt(value);
+		if(value < 1 || value > 9  || isNaN(value)){
+			return res.json({ error: 'Invalid value' });
 		}
-		let _id = query._id;
-		if((query.issue_text == "" || query.issue_text == null) && (query.issue_title == "" || query.issue_title == null) && (query.created_by == "" || query.created_by == null) && (query.assigned_to == "" || query.assigned_to == null) && (query.status_text == "" || query.status_text == null) && (query.open == "" || query.open == null)){
-			return res.json({ error: 'no update field(s) sent', '_id': _id  });
-		}                                      		
-	  
-		let issues = loadIssues();
-		// Dynamische Filterung basierend auf den Query-Parametern
-		let updated = false;
-		for (const ent in issues){
-	    //console.log(ent);
-		if(issues[ent]._id === query._id){
-				//console.log(issues[ent]);
-			if (query.issue_title != ''){
-				issues[ent].issue_title = query.issue_title;
-				updated = true;
+		
+		//String mit 81 Stellen aus Zahlen und Punkten
+		let res_puzzle = solver.validate(puzzle);
+		if (res_puzzle == "not 81 long"){
+			return res.json({ error: 'Expected puzzle to be 81 characters long' });
+		}
+		if (res_puzzle == "invalid char"){
+			return res.json({ error: 'Invalid characters in puzzle' });
+		}
+		
+		//
+		//Werte / Eingaben checken
+		
+		if (coord != undefined && coord != null){
+			coord_split = coord.split('');
+		} 
+		coord_split[0] = char_to_num(coord_split[0]);
+		coord_split[1] = parseInt(coord_split[1]);
+		if (coord_split[0] < 0 || coord_split[0] > 10  || coord_split[1] < 1 || coord_split[1] > 10 || coord_split.length != 2 || coord_split[0] == "Fehler" || isNaN(coord_split[1]) ) {
+			return res.json({ error: 'Invalid coordinate' });
+		}
+		
+		if(puzzle[coord_split[0] *9 + coord_split[1] -1] == value){
+			return res.json({ valid : true});
+		}
+		let conf = [];
+		if(! (solver.checkRowPlacement(puzzle, coord_split[0], coord_split[1]-1, value)) ) {//  checkRowPlacement(puzzleString, row, column, value) {
+		
+			conf.push("row");
+			}		
+		if(! (solver.checkColPlacement(puzzle, coord_split[0], coord_split[1]-1, value)) ) {
+			conf.push("column");
 			}
-  		if (query.issue_text != ''){
-				issues[ent].issue_text  = query.issue_text ;
-				updated = true;
-			}
-  		if (query.created_by != ''){
-				issues[ent].created_by = query.created_by;
-				updated = true;
-			}
-  		if (query.assigned_to != ''){
-				issues[ent].assigned_to = query.assigned_to;
-				updated = true;
-			}
-  		if (query.status_text != ''){
-				issues[ent].status_text = query.status_text;
-				updated = true;
-			}
-  		if (query.open == 'false'){
-				issues[ent].open = false;
-				updated = true;
+		if(! (solver.checkRegionPlacement(puzzle, coord_split[0], coord_split[1], value)) ) {
+			conf.push("region");
 			} 
-			//found.push(issues[ent]);
-			/*if (query.open){
-				issues[ent].open = false;
-			}*/
-				if (updated){
-					let time = new Date(); // Aktuelle Zeit als Date-Objekt
-					issues[ent].updated_on = time.toISOString();
-					//console.log("change", issues[ent]);
-				}
-			}
+			
+        
+		if (conf.length > 0){
+			 res.json({ valid : false, conflict : conf });
+			 //console.log(res);
+			 return
+		} else {
+			return res.json({ valid : true });
 		}
-	
-	if(updated){
-		//console.log(`Gefundene Ergebnisse: ${JSON.stringify(issues)}`);
-		// Das Array wieder in der JSON-Datei speichern
-		saveIssues(issues);
-		return res.json({  result: 'successfully updated', '_id': _id });
-    } else {
-		return res.json({  error: 'could not update', '_id': _id  });	
-	}
-	})
+	});
     
-    .delete(function (req, res){
-      let project = req.params.project;
-      console.log(project);
-		const query = req.body; // Enthält alle Query-Parameter wie ?issue_title=xyz&created_by=abc
-      
-		if(query._id == "" || query._id == null ){
-			console.log("id missing");
-			return res.json({ error: 'missing _id' });
+  app.route('/api/solve')
+    .post((req, res) => {
+		let puzzle = req.body.puzzle;
+		// kein puzzle String
+		if (puzzle == null || puzzle == "") {
+			return res.json({ error: 'Required field missing' });
 		}
-		let _id = query._id;
-		// Laden der vorhandenen Issues aus der JSON-Datei
-		let issues = loadIssues();
-		let deleted = false;
-		for (const ent in issues){
-			//console.log(ent);
-			if(issues[ent]._id === query._id){
-				console.log(issues[ent]);
-				issues.splice(ent, 1);
-				deleted = true;
-			}
+		//String mit 81 Stellen aus Zahlen und Punkten
+		let res_puzzle = solver.validate(puzzle);
+		if (res_puzzle == "not 81 long"){
+			return res.json({ error: 'Expected puzzle to be 81 characters long' });
 		}
-		saveIssues(issues);
-	if(deleted){
-		//console.log(`Gefundene Ergebnisse: ${JSON.stringify(issues)}`);
-		return res.json({  result: 'successfully deleted', '_id': _id });
-    } else {
-		return res.json({  error: 'could not delete', '_id': _id  });	
-	}
-	
-    });
-    
+		if (res_puzzle == "invalid char"){
+			return res.json({ error: 'Invalid characters in puzzle' });
+		}
+		res_puzzle = solver.solve(puzzle);
+		if (res_puzzle[0]){
+			return res.json({ solution: res_puzzle[1] });
+		} else {
+			return res.json({ error: 'Puzzle cannot be solved' });
+		}
+	});
 };
