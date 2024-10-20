@@ -1,3 +1,4 @@
-# Issue Tracker
+# Sudoku Solver
+This is the boilerplate with a solution for the Sudoku Solver project. Instructions for building the project can be found at https://www.freecodecamp.org/learn/quality-assurance/quality-assurance-projects/
 
-This is the boilerplate for the Issue Tracker project. Instructions for building your project can be found at https://www.freecodecamp.org/learn/quality-assurance/quality-assurance-projects/issue-tracker
+The algorithm is just a backtracking approach.
