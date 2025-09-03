@@ -11,3 +11,5 @@ MONGO_URI=
 ```
 in it and .env as name
 Get your own MONGO_URI btw (it could also be - maybe - possible to solve the task with a .json-file as memory for the entries)
+
+You only need PORT if the default-port is not available and NODE_ENV set to test means it starts in test-mode. 
